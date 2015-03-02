@@ -9,6 +9,7 @@
     <KaldiOptimize>true</KaldiOptimize>
     <KaldiDebugInfo>false</KaldiDebugInfo>
     <KaldiRootPath>../</KaldiRootPath>
+    <UseIntelMKL>No</UseIntelMKL>
   </PropertyGroup>
 
   <Import Project="kaldi.user.props" />
@@ -19,7 +20,7 @@
     <ConfigurationPlatformExists>true</ConfigurationPlatformExists>
     <IgnoreWarnIntDirSharingDetected>true</IgnoreWarnIntDirSharingDetected>
   </PropertyGroup>
-  
+
   <!-- Common build defaults -->
   <ItemDefinitionGroup>
     <ClCompile>
@@ -68,6 +69,25 @@
     </Link>
   </ItemDefinitionGroup>
 
+  <!-- User setting: UseIntelMKL -->
+  <ItemDefinitionGroup Condition=" '$(UseIntelMKL)' != '' and '$(UseIntelMKL)' != 'No' ">
+    <ClCompile>
+      <PreprocessorDefinitions>HAVE_MKL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- Linking with MKL sometimes produces a deluge of warnings 4006 and 4221. Ignore them, they are harmless. -->
+    <Lib>
+      <AdditionalOptions>/IGNORE:4006,4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+    <Link>
+      <AdditionalOptions>/IGNORE:4006,4221 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+
+
+
+
+
+
   <PropertyGroup>
     <!-- Build depth.
       On a build/rebuild taget, this determines the extent of the build:
@@ -93,22 +113,23 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildStage)' == 'Binary' or '$(BuildStage)' == 'Test'" >
-    <ProjectName>$(TargetName)</ProjectName>
+  <PropertyGroup Condition="'$(BuildStage)' == 'Binary'" >
+    <TargetName>$(KaldiBinaryTarget)</TargetName>
+    <ProjectName>$(KaldiBinaryTarget)</ProjectName>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
     <ClCompile>
-      <!-- Add Kaldi root path as an additional include source. -->
-      <AdditionalIncludeDirectories>$(_KaldiRootPath)src;%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <!-- Add Kaldi root path and explicitly provided paths as additional include sources. -->
+      <AdditionalIncludeDirectories>$(_KaldiRootPath)src;$(KaldiIncludePaths);%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>$(KaldiDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <!-- Set unique intermediate pdb name for each build to avoid conflicts and speed up compilation. -->
       <ProgramDataBaseFileName>$(IntDir)$(TargetName)-$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
     </ClCompile>
-  </ItemDefinitionGroup>  
-  
+  </ItemDefinitionGroup>
+
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  
+
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
 </Project>
-    
