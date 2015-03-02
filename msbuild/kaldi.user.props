@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    
+    <!-- Define build bitness. Valid values are Win32 and x64 -->
+    <Platform>Win32</Platform>
+    
+    <!-- Toolset. Tested with "v120" (Microsoft VS2013) and "Intel C++ Compiler XE 15.0" (w/o quotes, exact string)-->
+    <!-- NB: Due to a bug in Intel build scripts, libraries will be rebuilt each time build is run.
+             See https://software.intel.com/en-us/forums/topic/537271 -->
+    <PlatformToolset>Intel C++ Compiler XE 15.0</PlatformToolset>
+
+    
+    <!-- Optimization. Turn off in rare debug cases -->
+    <KaldiOptimize>true</KaldiOptimize>
+    
+    <!-- Add debug information to executables. This does not slow down computation, only increases disk file sizes. -->
+    <KaldiDebugInfo>true</KaldiDebugInfo>
+    
+    <!-- Optimise using SSE or AVX. Must perhaps be used if availble. 
+      Valid values are:
+        StreamingSIMDExtensions2  - SSE2 - All modern Intel and AMD CPUs. (Both MS and Intel compilers support.)
+        StreamingSIMDExtensions3  - SSE3 - All modern Intel and AMD CPUs. (Only Intel compiler supports this.)
+        AdvancedVectorExtensions  - AVX  - Intel Sandy Bridge and above, AMD Bulldozer and above. (MS/Intel)
+        AdvancedVectorExtensions2 - AVX2 - Intel Haswell and above, AMD expected to support in Excavator (MS/Intel)
+        
+        Note that in SandyBridge AVX is emulated on 256 bit hardware and does not generally outperform SSE3.
+        In Haswell, however, this is the real deal.
+      -->
+    <KaldiCpuInstructionSet>AdvancedVectorExtensions</KaldiCpuInstructionSet>
+    
+    <!-- CUDA. Combination of Intel toolset 15.0 works only with CUDA 6.5 with some included hacks. 
+               No other combinations of intel toolset and CUDA have ben tested. MS compiler works
+               straight out of the box. -->
+    <KaldiCUDA>true</KaldiCUDA> 
+    
+    <!-- Path from msbuild project root to kaldi root (normally just ../) -->
+    <KaldiRootPath>../</KaldiRootPath>
+
+  </PropertyGroup>
+</Project>
+    

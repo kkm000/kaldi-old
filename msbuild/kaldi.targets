@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="" InitialTargets="KaldiValidateConfiguration" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="KaldiValidateConfiguration">
+    <Error Condition=" '$(BuildStage)' != '' and '$(BuildStage)' != 'Binary' and '$(BuildStage)' != 'Library' "
+           Text="Invalid BuildStage. Are you running the top-level build project?"/>
+    <Error Condition=" '$(BuildStage)' == 'Binary' and '$(TargetName)' == '' " 
+           Text="For the Binary and Test build stages, TargetName= specification is required. Are you running the top-level build project?"/>
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="_PrepareBuildStages" Condition=" '$(BuildStage)' == '' ">
+    <MSBuild Targets="Build" Projects="@(_LibraryTarget)"/>
+    <MSBuild Targets="Build" Projects="@(_BinaryTarget)" BuildInParallel="true" Condition=" $(KaldiBuildDepth) >= 1 "/>
+    <MSBuild Targets="Build" Projects="@(_TestTarget)" BuildInParallel="true" Condition=" $(KaldiBuildDepth) >= 2 "/>
+  </Target>
+
+  <Target Name="Rebuild" DependsOnTargets="_PrepareBuildStages" Condition=" '$(BuildStage)' == '' ">
+    <MSBuild Targets="Rebuild" Projects="@(_LibraryTarget)"/>
+    <MSBuild Targets="Rebuild" Projects="@(_BinaryTarget)" BuildInParallel="true" Condition=" $(KaldiBuildDepth) >= 1 "/>
+    <MSBuild Targets="Rebuild" Projects="@(_TestTarget)" BuildInParallel="true" Condition=" $(KaldiBuildDepth) >= 2 "/>
+  </Target>
+  
+  <Target Name="Clean" DependsOnTargets="_PrepareBuildStages" Condition=" '$(BuildStage)' == '' ">
+    <MSBuild Targets="Clean" Projects="@(_LibraryTarget)" Condition=" '@(_LibraryTarget)' != '' "/>
+    <MSBuild Targets="Clean" Projects="@(_BinaryTarget);@(_TestTarget)" BuildInParallel="true" StopOnFirstFailure="false"/>
+  </Target>
+  
+  <Target Name="_PrepareBuildStages">
+    <PropertyGroup>
+      <_RunTest Condition=" $(KaldiBuildDepth) >= 3 ">true</_RunTest>
+    </PropertyGroup>
+    <ItemGroup>
+      <_LibraryTarget Include="$(MSBuildProjectFile)" Condition=" '@(LibSource)' != '' ">
+        <Properties>BuildStage=Library</Properties>
+      </_LibraryTarget>
+      <_BinaryTarget Include="$(MSBuildProjectFile)" Condition=" '@(BinSource)' != '' ">
+        <Properties>BuildStage=Binary;TargetName=%(filename)</Properties>
+      </_BinaryTarget>
+      <_TestTarget Include="$(MSBuildProjectFile)" Condition=" '@(TestSource)' != '' ">
+        <Properties>BuildStage=Binary;TargetName=%(filename);RunTest=$(_RunTest)</Properties>
+      </_TestTarget>
+    </ItemGroup>    
+  </Target>
+  
+  <Target Name ="_BeforeBuildAnyStage" Condition="'@(DependsOnLibs)' != ''">
+    <ItemGroup>
+      <!-- Convert all library references into project references. -->
+      <ProjectReference Include="@(DependsOnLibs->'$(_KaldiSrcSubdir)%(filename).kwproj')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name ="_BeforeBuildLibrary" BeforeTargets="_PrepareForBuild" DependsOnTargets="_BeforeBuildAnyStage" Condition=" '$(BuildStage)' == 'Library' ">
+    <ItemGroup>
+      <!-- Fetch all *.cc files from <LibSource> into the build as C/C++ sources. -->
+      <ClCompile Include="@(LibSource->'$(_KaldiSrcSubdir)%(identity)')" Condition=" '%(extension)' == '.cc' " />
+      <!-- TODO: Fetch all *.cu files as CUDA sources. -->
+
+    </ItemGroup>
+  </Target>
+
+  <Target Name ="_BeforeBuildExecutable" BeforeTargets="_PrepareForBuild" DependsOnTargets="_BeforeBuildAnyStage" Condition=" '$(BuildStage)' == 'Binary' ">
+    <ItemGroup>
+      <!-- Use Target as the source. Omit any checks, and let it fail cryptically if TargetName is incorrectly set. -->
+      <ClCompile Include="$(_KaldiSrcSubdir)$(TargetName).cc"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_BeforeLinkExecutable" BeforeTargets="Link" Condition=" '$(BuildStage)' == 'Binary' and '@(LibSource)' != '' ">
+    <!-- If we've build a library in this location, add a dependency on it. -->
+    <ItemGroup>
+      <Link>
+        <AdditionalDependencies>$(OutDir)$(MSBuildProjectName).lib;%(Link.AdditionalDependencies)</AdditionalDependencies>
+      </Link>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_RunTest" AfterTargets="AfterBuild" Inputs="$(TargetPath)" Outputs="$(IntDir)$(TargetName).success" Condition=" '$(BuildStage)' == 'Binary' and  '$(RunTest)' == 'true' ">
+    <Message Importance="high" Text="*** Running test: $(TargetPath)" />
+    <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
+    <Exec Command="$(TargetPath)" WorkingDirectory="$(_KaldiRootPath)" IgnoreStandardErrorWarningFormat="true"/>
+    <!-- If the test succeeds, mark as such -->
+    <Touch AlwaysCreate="true" Files="$(IntDir)$(TargetName).success"/>
+  </Target>
+
+  <Target Name="_CleanAfterTests" BeforeTargets="CoreClean" Condition=" '$(BuildStage)' == 'Binary' ">
+    <!-- Delete test success marker file. -->
+    <Message  Importance="high" Text="DELETE MARKER: $(IntDir)$(TargetName).success"/>
+    <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
+  </Target>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition=" '$(BuildStage)' != '' "/>
+</Project>

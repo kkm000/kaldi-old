@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Defaults, to be changed in kaldi.user.props -->
+  <PropertyGroup>
+    <Platform>Win32</Platform>
+    <PlatformToolset>v120</PlatformToolset>
+    <KaldiCUDA>true</KaldiCUDA>
+    <KaldiOptimize>true</KaldiOptimize>
+    <KaldiDebugInfo>false</KaldiDebugInfo>
+    <KaldiRootPath>../</KaldiRootPath>
+  </PropertyGroup>
+
+  <Import Project="kaldi.user.props" />
+
+  <!-- Do not change these, affect build process. -->
+  <PropertyGroup>
+    <Configuration>Release</Configuration>
+    <ConfigurationPlatformExists>true</ConfigurationPlatformExists>
+    <IgnoreWarnIntDirSharingDetected>true</IgnoreWarnIntDirSharingDetected>
+  </PropertyGroup>
+  
+  <!-- Common build defaults -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>$(KaldiCpuInstructionSet)</EnableEnhancedInstructionSet>
+      <ErrorReporting>None</ErrorReporting>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Cpp0xSupport>true</Cpp0xSupport>
+      <!-- These properties affect the Intel compiler only -->
+      <FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>
+      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <!--<LinkIncremental>false</LinkIncremental>-->
+    </Link>
+  </ItemDefinitionGroup>
+  <PropertyGroup>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+
+  <!-- User setting: KaldiOptimize = true -->
+  <ItemDefinitionGroup Condition=" '$(KaldiOptimize)' == 'true' ">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <InterproceduralOptimization>MultiFile</InterproceduralOptimization>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <PropertyGroup Condition=" '$(KaldiOptimize)' == 'true' ">
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <!-- User setting: KaldiDebugInfo = true -->
+  <ItemDefinitionGroup Condition=" '$(KaldiDebugInfo)' == 'true' ">
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup>
+    <!-- Build depth.
+      On a build/rebuild taget, this determines the extent of the build:
+      0 - Build library only. This is the default, in case the project is invoked as a library dependency.
+      1 - As above, and also binary files.
+      2 - As above, and also build tests.
+      3 - As above, and also run tests.
+    -->
+    <KaldiBuildDepth Condition=" '$(KaldiBuildDepth)' == '' ">0</KaldiBuildDepth>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Compute kaldi root path that works whether KaldiRootPath is absolute or relative -->
+    <_KaldiRootPath>$([System.IO.Path]::Combine('..', '$(KaldiRootPath)'))</_KaldiRootPath>
+    <!-- Compute path to a subdirectory under (kaldi_root)/src/ with sources for the current project. -->
+    <_KaldiSrcSubdir>$(_KaldiRootPath)src/$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))/</_KaldiSrcSubdir>
+    <!-- Place generated files besides the source, as the original linux build does -->
+    <OutDir>$(_KaldiSrcSubdir)</OutDir>
+    <IntDir>obj/</IntDir>
+  </PropertyGroup>
+
+  <PropertyGroup  Condition="'$(BuildStage)' == 'Library'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildStage)' == 'Binary' or '$(BuildStage)' == 'Test'" >
+    <ProjectName>$(TargetName)</ProjectName>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <!-- Add Kaldi root path as an additional include source. -->
+      <AdditionalIncludeDirectories>$(_KaldiRootPath)src;%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <!-- Set unique intermediate pdb name for each build to avoid conflicts and speed up compilation. -->
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+  </ItemDefinitionGroup>  
+  
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+</Project>
+    
