@@ -84,17 +84,16 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_RunTest" AfterTargets="AfterBuild" Inputs="$(TargetPath)" Outputs="$(IntDir)$(TargetName).testlog" Condition=" '$(BuildStage)' == 'Binary' and  '$(RunTest)' == 'true' ">
+  <Target Name="_RunTest" AfterTargets="AfterBuild" Inputs="$(TargetPath)" Outputs="$(IntDir)$(TargetName).success" Condition=" '$(BuildStage)' == 'Binary' and  '$(RunTest)' == 'true' ">
     <Message Importance="high" Text="*** Running test: $(TargetPath)" />
-    <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).testlog"/>
-    <Exec Command="$(TargetPath) > $([System.IO.Path]::GetFullPath('$(IntDir)$(TargetName).testlog')) 2>&amp;1" WorkingDirectory="$(_KaldiRootPath)" IgnoreStandardErrorWarningFormat="true"/>
-    <!-- If the test succeeds, mark as such -->
-    <Touch AlwaysCreate="true" Files="$(IntDir)$(TargetName).testlog"/>
+    <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
+    <Exec Command="$(TargetPath) >nul 2>&amp;1" WorkingDirectory="$(_KaldiRootPath)" IgnoreStandardErrorWarningFormat="true"/>
+    <Touch AlwaysCreate="true" Files="$(IntDir)$(TargetName).success"/>
   </Target>
 
   <Target Name="_CleanAfterTests" BeforeTargets="CoreClean" Condition=" '$(BuildStage)' == 'Binary' ">
     <!-- Delete test log file. -->
-    <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).testlog"/>
+    <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
   </Target>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition=" '$(BuildStage)' != '' "/>

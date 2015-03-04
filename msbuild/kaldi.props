@@ -83,11 +83,6 @@
     </Link>
   </ItemDefinitionGroup>
 
-
-
-
-
-
   <PropertyGroup>
     <!-- Build depth.
       On a build/rebuild taget, this determines the extent of the build:
