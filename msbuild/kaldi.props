@@ -26,12 +26,12 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>$(KaldiCpuInstructionSet)</EnableEnhancedInstructionSet>
       <ErrorReporting>None</ErrorReporting>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Cpp0xSupport>true</Cpp0xSupport>
       <!-- These properties affect the Intel compiler only -->
@@ -124,6 +124,30 @@
   </ItemDefinitionGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <!-- CUDA properties may be set up only this late. -->
+  <PropertyGroup>
+    <CUDAPropsPath Condition="'$(CUDAPropsPath)'==''">$(VCTargetsPath)/BuildCustomizations</CUDAPropsPath>
+    <CUDAFound Condition="exists('$(CUDAPropsPath)/CUDA 6.5.props')" >65</CUDAFound>
+    <!--<CUDAFound Condition="exists('$(CUDAPropsPath)\CUDA 7.0.props')" >70</CUDAFound>-->
+  </PropertyGroup>
+
+  <ImportGroup Condition=" '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' ">
+    <Import Project="$(CUDAPropsPath)/CUDA 6.5.props" Condition=" '$(CUDAFound)' == '65' "  />
+  </ImportGroup>
+
+  <ItemDefinitionGroup  Condition=" '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' ">
+    <CudaCompile>
+      <CodeGeneration>compute_20,sm_20;compute_30,sm_30;compute_35,sm_35;compute_37,sm_37;compute_50,sm_50;</CodeGeneration>
+      <!--<Runtime>MT</Runtime>-->
+    </CudaCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>HAVE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>cublas.lib;cusparse.lib;cudart_static.lib;cuda.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />

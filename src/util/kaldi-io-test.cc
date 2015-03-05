@@ -161,14 +161,9 @@ void UnitTestIoNew(bool binary) {
 void UnitTestIoPipe(bool binary) {
   // This is as UnitTestIoNew except with different filenames.
   {
-#ifdef _MSC_VER
-    const char *filename_out = "|more > tmpf.txt",
-        *filename_in = "type tmpf.txt |";
-#else
     const char *filename_out = "|gzip -c > tmpf.gz",
         *filename_in = "gunzip -c tmpf.gz |";
-#endif
-    
+
     Output ko(filename_out, binary);
     std::ostream &outfile = ko.Stream();
     if (!binary) outfile << "\t";
@@ -214,10 +209,6 @@ void UnitTestIoPipe(bool binary) {
     if (!binary && Rand()%2 == 0) outfile << "\t";
     bool ans = ko.Close();
     KALDI_ASSERT(ans);
-#ifndef _MSC_VER
-    sleep(1);  // This test does not work without this sleep:
-    // seems to be some kind of file-system latency.
-#endif
     {
       bool binary_in;
       Input ki(filename_in, &binary_in);

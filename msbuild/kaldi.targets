@@ -6,6 +6,8 @@
            Text="Invalid BuildStage. Are you running the top-level build project?"/>
     <Error Condition=" '$(BuildStage)' == 'Binary' and '$(KaldiBinaryTarget)' == '' "
            Text="For the Binary and Test build stages, KaldiBinaryTarget= specification is required. Are you running the top-level build project?"/>
+    <Warning Condition=" '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' == '' "
+             Text="CUDA has been requested in kaldi.user.props but not found. Install CUDA 6.5 (not supporting other versions at the moment)." />
   </Target>
 
   <Target Name="Build" DependsOnTargets="_PrepareBuildStages" Condition=" '$(BuildStage)' == '' ">
@@ -47,14 +49,22 @@
       --><!-- Convert all library references into project references. --><!--
       <ProjectReference Include="@(DependsOnLibs->'$(MSBuildProjectDirectory)\%(relativedir)%(filename).kwproj')" />
     </ItemGroup>-->
+    <!-- Hack CUDA 6.5 into working with Intel XE 15.0 compiler. Other combinations untested. -->
+    <ItemGroup Condition=" '$(PlatformToolset.StartsWith(`Intel C++ Compiler`))' == 'true' ">
+      <CudaCompile>
+        <VCBinDir>$(ICInstallDir)bin\ia32\icl.exe</VCBinDir>
+        <BaseCommandLineTemplate>-ccbin "%(CudaCompile.VCBinDir)" [GenerateRelocatableDeviceCode] [Include] [RequiredIncludes] [CInterleavedPTX] [GPUDebugInfo] [GenerateLineInfo] [Keep] [KeepDir] [MaxRegCount] [PtxAsOptionV] [TargetMachinePlatform] [NvccCompilation] [CudaRuntime] [AdditionalOptions]</BaseCommandLineTemplate>
+        <RuntimeApiCommandLineTemplate>%(CudaCompile.BaseCommandLineTemplate) [HostDebugInfo] [Emulation] [FastMath] [Defines] %(CudaCompile.HostCommandLineTemplate) [CompileOut] "%(CudaCompile.FullPath)"</RuntimeApiCommandLineTemplate>
+      </CudaCompile>
+    </ItemGroup>
   </Target>
 
   <Target Name ="_BeforeBuildLibrary" BeforeTargets="_PrepareForBuild" DependsOnTargets="_BeforeBuildAnyStage" Condition=" '$(BuildStage)' == 'Library' ">
     <ItemGroup>
       <!-- Fetch all *.cc files from <LibSource> into the build as C/C++ sources. -->
       <ClCompile Include="@(LibSource->'$(_KaldiSrcSubdir)%(identity)')" Condition=" '%(extension)' == '.cc' " />
-      <!-- TODO: Fetch all *.cu files as CUDA sources. -->
-
+      <!-- Fetch all *.cu files as CUDA sources. -->
+      <CudaCompile Include="@(LibSource->'$(_KaldiSrcSubdir)%(identity)')" Condition=" '%(extension)' == '.cu' and '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' " />
     </ItemGroup>
   </Target>
 
@@ -97,4 +107,5 @@
   </Target>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition=" '$(BuildStage)' != '' "/>
+  <Import Project="$(CUDAPropsPath)\CUDA 6.5.targets" Condition=" '$(BuildStage)' != '' and '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' == '65' "/>
 </Project>
