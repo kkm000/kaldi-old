@@ -21,10 +21,9 @@
 #include "util/parse-options.h"
 #include "util/edit-distance.h"
 
-int main(int argc, char *argv[]) {
-  using namespace kaldi;
-  typedef kaldi::int32 int32;
+namespace kaldi {
 
+int main(int argc, char *argv[]) {
   try {
     const char *usage =
         "Computes alignment between two sentences with the same key in the\n"
@@ -116,4 +115,11 @@ int main(int argc, char *argv[]) {
     std::cerr << e.what();
     return -1;
   }
+}
+
+}  //namespace kaldi
+
+
+int main(int argc, char *argv[]) {
+  return kaldi::main(argc, argv);
 }

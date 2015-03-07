@@ -41,6 +41,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <!--<LinkIncremental>false</LinkIncremental>-->
+      <AdditionalDependencies>$(KaldiLibFiles);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(KaldiLibPaths);%(AdditionalLibraryDirectories);</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <PropertyGroup>

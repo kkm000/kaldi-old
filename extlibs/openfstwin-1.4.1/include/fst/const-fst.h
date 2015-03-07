@@ -261,7 +261,7 @@ class ConstFst : public ImplToExpandedFst< ConstFstImpl<A, U> > {
  public:
   friend class StateIterator< ConstFst<A, U> >;
   friend class ArcIterator< ConstFst<A, U> >;
-  template <class F, class G> void friend Cast(const F &, G *);
+  template <class F, class G> friend void Cast(const F &, G *);
 
   typedef A Arc;
   typedef typename A::StateId StateId;

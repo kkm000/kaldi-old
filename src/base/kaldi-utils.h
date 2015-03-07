@@ -30,12 +30,13 @@
 # include <windows.h>
 #endif
 
-#if _MSC_VER < 1400
-#define __restrict__
-#endif
-
 #if defined(_MSC_VER)
 #pragma warning(disable: 4244 4056 4305 4800 4267 4996 4756 4661)
+#if _MSC_VER < 1400
+#define __restrict__
+#else
+#define __restrict__ __restrict
+#endif
 #endif
 
 #ifdef HAVE_POSIX_MEMALIGN

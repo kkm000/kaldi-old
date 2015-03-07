@@ -71,7 +71,7 @@ template <class A, class B, class C> class ArcMapFst;
 template <class A> class ProjectFst;
 template <class A, class B, class S> class RandGenFst;
 template <class A> class RelabelFst;
-template <class A, class T = DefaultReplaceStateTable<A>, class C = DefaultCacheStore<A> > class ReplaceFst;
+template <class A, class T = DefaultReplaceStateTable<A, ssize_t>, class C = DefaultCacheStore<A> > class ReplaceFst;
 template <class A> class RmEpsilonFst;
 template <class A> class UnionFst;
 
