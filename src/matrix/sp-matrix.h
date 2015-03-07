@@ -124,7 +124,7 @@ class SpMatrix : public PackedMatrix<Real> {
   }
 
   SpMatrix<Real>& operator=(const SpMatrix<Real> &other) {
-    PackedMatrix<Real>::CopyFromPacked(other);
+    PackedMatrix<Real>::operator=(other);
     return *this;
   }
 

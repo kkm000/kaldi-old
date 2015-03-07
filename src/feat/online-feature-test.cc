@@ -154,7 +154,7 @@ void TestOnlineSpliceFrames() {
 }
 
 void TestOnlineMfcc() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -202,7 +202,7 @@ void TestOnlineMfcc() {
 }
 
 void TestOnlinePlp() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -250,7 +250,7 @@ void TestOnlinePlp() {
 }
 
 void TestOnlineTransform() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -293,7 +293,7 @@ void TestOnlineTransform() {
 }
 
 void TestOnlineAppendFeature() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);

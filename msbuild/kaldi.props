@@ -12,7 +12,11 @@
     <UseIntelMKL>No</UseIntelMKL>
   </PropertyGroup>
 
-  <Import Project="kaldi.user.props" />
+  <PropertyGroup>
+    <KaldiUserProps Condition=" '$(KaldiUserProps)' == '' ">kaldi.user.props</KaldiUserProps>
+  </PropertyGroup>
+
+  <Import Project="$(KaldiUserProps)" />
 
   <!-- Do not change these, affect build process. -->
   <PropertyGroup>
@@ -35,7 +39,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Cpp0xSupport>true</Cpp0xSupport>
       <!-- These properties affect the Intel compiler only -->
-      <FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>
+      <!--<FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>-->
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Link>
@@ -125,6 +129,10 @@
     </ClCompile>
   </ItemDefinitionGroup>
 
+  <PropertyGroup>
+    <_UsingIntelToolset>$(PlatformToolset.StartsWith('Intel C++ Compiler'))</_UsingIntelToolset>
+  </PropertyGroup>
+
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
 
   <!-- CUDA properties may be set up only this late. -->
@@ -141,7 +149,6 @@
   <ItemDefinitionGroup  Condition=" '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' ">
     <CudaCompile>
       <CodeGeneration>compute_20,sm_20;compute_30,sm_30;compute_35,sm_35;compute_37,sm_37;compute_50,sm_50;</CodeGeneration>
-      <!--<Runtime>MT</Runtime>-->
     </CudaCompile>
     <ClCompile>
       <PreprocessorDefinitions>HAVE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -149,6 +156,19 @@
     <Link>
       <AdditionalDependencies>cublas.lib;cusparse.lib;cudart_static.lib;cuda.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup Condition=" '$(_UsingIntelToolset)' == 'true' ">
+    <CudaClVersion>2013</CudaClVersion>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup  Condition=" '$(_UsingIntelToolset)' == 'true' ">
+    <CudaCompile>
+      <!--<UseHostDefines>false</UseHostDefines>-->
+      <VCBinDir>C:\Program Files (x86)\Intel\Composer XE 2015\bin\ia32\icl.exe</VCBinDir>
+      <BaseCommandLineTemplate>-ccbin "%(VCBinDir)" [GenerateRelocatableDeviceCode] [Include] [RequiredIncludes] [CInterleavedPTX] [GPUDebugInfo] [GenerateLineInfo] [Keep] [KeepDir] [MaxRegCount] [PtxAsOptionV] [TargetMachinePlatform] [NvccCompilation] [CudaRuntime] [AdditionalOptions]</BaseCommandLineTemplate>
+      <RuntimeApiCommandLineTemplate>%(BaseCommandLineTemplate) [HostDebugInfo] [Emulation] [FastMath] [Defines] %(HostCommandLineTemplate) [CompileOut] "%(FullPath)"</RuntimeApiCommandLineTemplate>
+    </CudaCompile>
   </ItemDefinitionGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />

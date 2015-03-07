@@ -46,19 +46,21 @@
     </ItemGroup>
   </Target>
 
-  <Target Name ="_BeforeBuildAnyStage" Condition="'@(DependsOnLibs)' != ''">
+  <Target Name ="_BeforeBuildAnyStage" >
     <!--<ItemGroup>
       --><!-- Convert all library references into project references. --><!--
       <ProjectReference Include="@(DependsOnLibs->'$(MSBuildProjectDirectory)\%(relativedir)%(filename).kwproj')" />
     </ItemGroup>-->
     <!-- Hack CUDA 6.5 into working with Intel XE 15.0 compiler. Other combinations untested. -->
-    <ItemGroup Condition=" '$(PlatformToolset.StartsWith(`Intel C++ Compiler`))' == 'true' ">
+    <!--<ItemGroup Condition=" '$(PlatformToolset.StartsWith(`Intel C++ Compiler`))' == 'true' ">
       <CudaCompile>
         <VCBinDir>$(ICInstallDir)bin\ia32\icl.exe</VCBinDir>
         <BaseCommandLineTemplate>-ccbin "%(CudaCompile.VCBinDir)" [GenerateRelocatableDeviceCode] [Include] [RequiredIncludes] [CInterleavedPTX] [GPUDebugInfo] [GenerateLineInfo] [Keep] [KeepDir] [MaxRegCount] [PtxAsOptionV] [TargetMachinePlatform] [NvccCompilation] [CudaRuntime] [AdditionalOptions]</BaseCommandLineTemplate>
         <RuntimeApiCommandLineTemplate>%(CudaCompile.BaseCommandLineTemplate) [HostDebugInfo] [Emulation] [FastMath] [Defines] %(CudaCompile.HostCommandLineTemplate) [CompileOut] "%(CudaCompile.FullPath)"</RuntimeApiCommandLineTemplate>
       </CudaCompile>
     </ItemGroup>
+    <Message Text="Change: '%(CudaCompile.RuntimeApiCommandLineTemplate)'" Importance="high"  Condition=" '$(PlatformToolset.StartsWith(`Intel C++ Compiler`))' == 'true' " />-->
+
   </Target>
 
   <Target Name ="_BeforeBuildLibrary" BeforeTargets="_PrepareForBuild" DependsOnTargets="_BeforeBuildAnyStage" Condition=" '$(BuildStage)' == 'Library' ">
@@ -66,11 +68,18 @@
       <!-- Fetch all *.cc files from <LibSource> into the build as C/C++ sources. -->
       <ClCompile Include="@(LibSource->'$(_KaldiSrcSubdir)%(identity)')" Condition=" '%(extension)' == '.cc' " />
       <!-- Fetch all *.cu files as CUDA sources. -->
-      <CudaCompile Include="@(LibSource->'$(_KaldiSrcSubdir)%(identity)')" Condition=" '%(extension)' == '.cu' and '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' " />
+      <CudaCompile Include="@(LibSource->'$(_KaldiSrcSubdir)%(identity)')" Condition=" '%(extension)' == '.cu' and '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' " >
+        <!--<VCBinDir>$(ICInstallDir)bin\ia32\icl.exe</VCBinDir>
+        <BaseCommandLineTemplate>-ccbin "%(CudaCompile.VCBinDir)" [GenerateRelocatableDeviceCode] [Include] [RequiredIncludes] [CInterleavedPTX] [GPUDebugInfo] [GenerateLineInfo] [Keep] [KeepDir] [MaxRegCount] [PtxAsOptionV] [TargetMachinePlatform] [NvccCompilation] [CudaRuntime] [AdditionalOptions]</BaseCommandLineTemplate>
+        <RuntimeApiCommandLineTemplate>%(CudaCompile.BaseCommandLineTemplate) [HostDebugInfo] [Emulation] [FastMath] [Defines] %(CudaCompile.HostCommandLineTemplate) [CompileOut] "%(CudaCompile.FullPath)"</RuntimeApiCommandLineTemplate>-->
+      </CudaCompile>
     </ItemGroup>
+    <!--<Message Text="@(CudaCompile->'%(RuntimeApiCommandLineTemplate)')" Importance="high" />
+    <Message Text="@(CudaCompile->'%(identity)')" Importance="high" />-->
+
   </Target>
 
-  <Target Name ="_BeforeBuildExecutable" BeforeTargets="_PrepareForBuild" DependsOnTargets="_BeforeBuildAnyStage" Condition=" '$(BuildStage)' == 'Binary' ">
+  <Target Name ="_BeforeBuildBinary" BeforeTargets="_PrepareForBuild" DependsOnTargets="_BeforeBuildAnyStage" Condition=" '$(BuildStage)' == 'Binary' ">
     <ItemGroup>
       <!-- Use Target as the source. Omit any checks, and let it fail cryptically if TargetName is incorrectly set. -->
       <ClCompile Include="$(_KaldiSrcSubdir)$(TargetName).cc"/>
@@ -96,10 +105,19 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="_AfterLinkAnyStage>" AfterTargets="Link"/>
+
+  <Target Name ="_AfterLinkBinary" DependsOnTargets="_AfterLinkAnyStage" Condition=" '$(BuildStage)' == 'Binary' ">
+    <!-- Linker always creates .lib an. .exp files for executable binaries if
+         any symbols are dllexported. Reduce clutter, in our case they are useless. -->
+    <Delete TreatErrorsAsWarnings="true" Files="$(OutDir)$(TargetName).lib;$(OutDir)$(TargetName).exp"/>
+  </Target>
+
+
   <Target Name="_RunTest" AfterTargets="AfterBuild" Inputs="$(TargetPath)" Outputs="$(IntDir)$(TargetName).success" Condition=" '$(BuildStage)' == 'Binary' and  '$(RunTest)' == 'true' ">
     <Message Importance="high" Text="*** Running test: $(TargetPath)" />
     <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
-    <Exec Command="$(TargetPath) >nul 2>&amp;1" WorkingDirectory="$(_KaldiRootPath)" IgnoreStandardErrorWarningFormat="true"/>
+    <Exec Command="$(TargetPath) > ../../logs/intel/$(TargetName).log 2>&amp;1" WorkingDirectory="$(_KaldiSrcSubdir)" IgnoreStandardErrorWarningFormat="true"/>
     <Touch AlwaysCreate="true" Files="$(IntDir)$(TargetName).success"/>
   </Target>
 

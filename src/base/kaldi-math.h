@@ -65,15 +65,10 @@
 #define M_LN2 0.693147180559945309417232121458
 #endif
 
-#ifdef _MSC_VER
-#  define KALDI_ISNAN _isnan
-#  define KALDI_ISINF(x) (!_isnan(x) && _isnan(x-x))
-#  define KALDI_ISFINITE _finite
-#else
-#  define KALDI_ISNAN std::isnan
-#  define KALDI_ISINF std::isinf
-#  define KALDI_ISFINITE(x) std::isfinite(x)
-#endif
+#define KALDI_ISNAN std::isnan
+#define KALDI_ISINF std::isinf
+#define KALDI_ISFINITE(x) std::isfinite(x)
+
 #if !defined(KALDI_SQR)
 # define KALDI_SQR(x) ((x) * (x))
 #endif

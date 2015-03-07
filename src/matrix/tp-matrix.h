@@ -115,7 +115,7 @@ class TpMatrix : public PackedMatrix<Real> {
   }
 
   TpMatrix<Real>& operator=(const TpMatrix<Real> &other) {
-    PackedMatrix<Real>::CopyFromPacked(other);
+    PackedMatrix<Real>::operator=(other);
     return *this;
   }
 
