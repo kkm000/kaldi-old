@@ -105,24 +105,27 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_AfterLinkAnyStage>" AfterTargets="Link"/>
-
-  <Target Name ="_AfterLinkBinary" DependsOnTargets="_AfterLinkAnyStage" Condition=" '$(BuildStage)' == 'Binary' ">
+  <Target Name ="_AfterLinkBinary" AfterTargets="Link" Condition=" '$(BuildStage)' == 'Binary' ">
     <!-- Linker always creates .lib an. .exp files for executable binaries if
          any symbols are dllexported. Reduce clutter, in our case they are useless. -->
     <Delete TreatErrorsAsWarnings="true" Files="$(OutDir)$(TargetName).lib;$(OutDir)$(TargetName).exp"/>
+    <Message Importance="high" Text="Deleting $(OutDir)$(TargetName).lib;$(OutDir)$(TargetName).exp"/>
   </Target>
-
 
   <Target Name="_RunTest" AfterTargets="AfterBuild" Inputs="$(TargetPath)" Outputs="$(IntDir)$(TargetName).success" Condition=" '$(BuildStage)' == 'Binary' and  '$(RunTest)' == 'true' ">
     <Message Importance="high" Text="*** Running test: $(TargetPath)" />
     <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
-    <Exec Command="$(TargetPath) > ../../logs/intel/$(TargetName).log 2>&amp;1" WorkingDirectory="$(_KaldiSrcSubdir)" IgnoreStandardErrorWarningFormat="true"/>
-    <Touch AlwaysCreate="true" Files="$(IntDir)$(TargetName).success"/>
+    <Exec Command="$(TargetPath) > ../../logs/intel/$(TargetName).log 2>&amp;1" WorkingDirectory="$(_KaldiSrcSubdir)" IgnoreStandardErrorWarningFormat="true" ContinueOnError="true"/>
+    <PropertyGroup>
+      <_TestSucceeded>$(MSBuildLastTaskResult)</_TestSucceeded>
+    </PropertyGroup>
+    <Touch AlwaysCreate="true" Files="$(IntDir)$(TargetName).success" Condition=" '$(_TestSucceeded)' == 'true' "/>
+    <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success" Condition=" '$(_TestSucceeded)' != 'true' "/>
+    <Warning Text="Test $(TargetPath) has failed" Condition=" '$(_TestSucceeded)' != 'true' "/> 
   </Target>
 
-  <Target Name="_CleanAfterTests" BeforeTargets="CoreClean" Condition=" '$(BuildStage)' == 'Binary' ">
-    <!-- Delete test log file. -->
+  <Target Name="_CleanAfterTest" BeforeTargets="CoreClean" Condition=" '$(BuildStage)' == 'Binary' ">
+    <!-- Delete test success flag file. -->
     <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
   </Target>
 

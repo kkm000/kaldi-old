@@ -427,6 +427,7 @@ int main(int argc, char *argv[]) {
     std::cerr << e.what();
     return -1;
   }
+  return 0;
 }
 
 }  //namespace kaldi
