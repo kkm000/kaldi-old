@@ -101,17 +101,10 @@ void Sleep(float seconds);
 
 
 // Makes copy constructor and operator= private.  Same as in compat.h of OpenFst
-// toolkit.  If using VS, for which this results in compilation errors, we
-// do it differently.
-
-#if defined(_MSC_VER)
-#define KALDI_DISALLOW_COPY_AND_ASSIGN(type) \
-  void operator = (const type&)
-#else
+// toolkit.
 #define KALDI_DISALLOW_COPY_AND_ASSIGN(type)    \
   type(const type&);                  \
   void operator = (const type&)
-#endif
 
 template<bool B> class KaldiCompileTimeAssert { };
 template<> class KaldiCompileTimeAssert<true> {
