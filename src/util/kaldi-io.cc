@@ -133,6 +133,34 @@ InputType ClassifyRxfilename(const std::string &filename) {
   }
 }
 
+#ifdef _MSC_VER
+  // A popen implementation that passes the command line through cygwin
+  // bash.exe. This is necessary since some piped commands are cygwin links
+  // (e. g. fgrep is a soft link to grep), and some are #!-files, such as
+  // gunzip which is a shell script that invokes gzip, or kaldi's own run.pl
+  // which is a perl script.
+  //
+  // _popen uses cmd.exe or whatever shell is specified via the COMSPEC
+  // variable. Unfortunately, it adds a hardcoded " /c " to it, so we cannot
+  // just substitute the environment variable COMSPEC to point to bash.exe.
+  // Instead, quote the command and pass it to bash via its -c switch.
+  FILE *popen(const char* command, const char* mode) {
+    // To speed up command launch marginally, optionally accept full path
+    // to bash.exe. This will not work if the path contains spaces, but
+    // no sane person would install cygwin into a space-ridden path.
+    const char* bash_exe = std::getenv("BASH_EXE");
+    std::string qcmd(bash_exe != nullptr ? bash_exe : "bash.exe");
+    qcmd += " -c \"";
+    for (; *command; ++command) {
+      if (*command == '\"' || *command == '\\')
+        qcmd += '\\';
+      qcmd += *command;
+    }
+    qcmd += '\"';
+
+    return _popen(qcmd.c_str(), mode);
+  }
+#endif  // _MSC_VER
 
 class OutputImplBase {
  public:
@@ -228,7 +256,7 @@ class PipeOutputImpl: public OutputImplBase {
     KALDI_ASSERT(wxfilename.length() != 0 && wxfilename[0] == '|');  // should start with '|'
     std::string cmd_name(wxfilename, 1);
 #ifdef _MSC_VER
-    f_ = _popen(cmd_name.c_str(), (binary ? "wb" : "w"));
+    f_ = popen(cmd_name.c_str(), (binary ? "wb" : "w"));
 #else
     f_ = popen(cmd_name.c_str(), "w");
 #endif
@@ -383,7 +411,6 @@ class StandardInputImpl: public InputImplBase {
   bool is_open_;
 };
 
-
 class PipeInputImpl: public InputImplBase {
  public:
   PipeInputImpl(): f_ (NULL), is_(NULL) { }
@@ -395,7 +422,7 @@ class PipeInputImpl: public InputImplBase {
            rxfilename[rxfilename.length()-1] == '|');  // should end with '|'
     std::string cmd_name(rxfilename, 0, rxfilename.length()-1);
 #ifdef _MSC_VER
-    f_ = _popen(cmd_name.c_str(), (binary ? "rb" : "r"));
+    f_ = popen(cmd_name.c_str(), (binary ? "rb" : "r"));
 #else
     f_ = popen(cmd_name.c_str(), "r");
 #endif
