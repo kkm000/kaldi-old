@@ -144,7 +144,9 @@ inline double LogAdd(double x, double y) {
 
   if (diff >= kMinLogDiffDouble) {
     double res;
-#ifdef _MSC_VER
+#if _MSC_VER >= 1800 || __cplusplus >= 201103L
+    res = x + std::log1p(std::exp(diff));
+#elif defined _MSC_VER
     res = x + log(1.0 + exp(diff));
 #else
     res = x + log1p(exp(diff));
@@ -168,7 +170,9 @@ inline float LogAdd(float x, float y) {
 
   if (diff >= kMinLogDiffFloat) {
     float res;
-#ifdef _MSC_VER
+#if _MSC_VER >= 1800 || __cplusplus >= 201103L
+    res = x + std::log1p(std::exp(diff));
+#elif defined _MSC_VER
     res = x + logf(1.0 + expf(diff));
 #else
     res = x + log1pf(expf(diff));
