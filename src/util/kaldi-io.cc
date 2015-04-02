@@ -20,6 +20,7 @@
 #include "base/kaldi-math.h"
 #include "util/text-utils.h"
 #include "util/parse-options.h"
+#include <cstdlib>
 #include <errno.h>
 
 #include "util/kaldi-pipebuf.h"
@@ -162,6 +163,78 @@ InputType ClassifyRxfilename(const std::string &filename) {
   }
 #endif  // _MSC_VER
 
+#ifdef _MSC_VER
+// Massage filename into an OS native format. This is chiefly for Windows.
+// Since shell scripts run under cygwin, they use cygwin's own mount table
+// and a mapping to the file system. It is quite possible to create quite an
+// intricate mapping that only own cygwin API would be able to untangle.
+// Unfortunately, the API to map between filenames is not available to non-
+// cygwin programs. Running cygpath for every file operation would as well
+// be cumbersome. So this is only a simplistic path resolution, assuming that
+// the default cygwin prefix /cygdrive is used, and that all resolved
+// unix-style full paths end up prefixed with /cygdrive. This is quite a
+// sensible approach. We'll also try to map /dev/null and /tmp/**, die on all
+// other /dev/** and warn about all other rooted paths.
+static bool prefixp(const std::string& pfx, const std::string& str) {
+  return pfx.length() <= str.length() &&
+    std::equal(pfx.begin(), pfx.end(), str.begin());
+}
+
+static std::string cygprefix("/cygdrive/");  // Ease the use of a -D later.
+
+static std::string map_os_path_no_tmp(const std::string &filename) {
+  // UNC(?), relative, native Windows and empty paths are ok already.
+  if (prefixp("//", filename) || !prefixp("/", filename))
+    return filename;
+
+  // /dev/...
+  if (filename == "/dev/null")
+    return "\\\\.\\nul";
+  if (prefixp("/dev/", filename)) {
+      KALDI_ERR << "Unable to resolve path '" << filename
+                << "' - only have /dev/null here.";
+      return "\\\\.\\invalid";
+  }
+
+  // /cygdrive/?[/....]
+  // 0----5---90 1
+  int preflen = cygprefix.size();
+  if (prefixp(cygprefix, filename)
+      && filename.size() >= preflen + 1 && isalpha(filename[preflen])
+      && (filename.size() == preflen + 1 || filename[preflen + 1] == '/')) {
+    return std::string() + filename[preflen] + ':' +
+       (filename.size() > preflen + 1 ? filename.substr(preflen + 1) : "/");
+  }
+
+  KALDI_WARN << "Unable to resolve path '" << filename
+             << "' - cannot map unix prefix. "
+             << "Will go on, but breakage will likely ensue.";
+  return filename;
+}
+
+// extern for unit testing.
+std::string map_os_path(const std::string &filename) {
+  // /tmp[/....]
+  if (filename != "/tmp" && !prefixp("/tmp/", filename)) {
+    return map_os_path_no_tmp(filename);
+  }
+  char *tmpdir = std::getenv("TMP");
+  if (tmpdir == nullptr)
+    tmpdir = std::getenv("TEMP");
+  if (tmpdir == nullptr) {
+    KALDI_ERR << "Unable to resolve path '" << filename
+              << "' - unable to find temporary directory. Set TMP.";
+    return filename;
+  }
+  // Do not return the result: cygwin environment actually may have unix-style paths.
+  return map_os_path_no_tmp(std::string(tmpdir) + filename.substr(4));
+}
+
+#else  // _MSC_VER
+// Identity on unix-ey file systems.
+#define map_os_path(x) x
+#endif  // _MSC_VER
+
 class OutputImplBase {
  public:
   // Open will open it as a file (no header), and return true
@@ -179,8 +252,9 @@ class FileOutputImpl: public OutputImplBase {
     if (os_.is_open()) KALDI_ERR << "FileOutputImpl::Open(), "
                                 << "open called on already open file.";
     filename_ = filename;
-    os_.open(filename_.c_str(), binary ? std::ios_base::out|std::ios_base::binary
-             : std::ios_base::out);
+    os_.open(map_os_path(filename_).c_str(),
+             binary ? std::ios_base::out | std::ios_base::binary
+                    : std::ios_base::out);
     return os_.is_open();
   }
 
@@ -350,8 +424,9 @@ class FileInputImpl: public InputImplBase {
   virtual bool Open(const std::string &filename, bool binary) {
     if (is_.is_open()) KALDI_ERR << "FileInputImpl::Open(), "
                                 << "open called on already open file.";
-    is_.open(filename.c_str(), binary ? std::ios_base::in|std::ios_base::binary
-             : std::ios_base::in);
+    is_.open(map_os_path(filename).c_str(),
+             binary ? std::ios_base::in | std::ios_base::binary
+                    : std::ios_base::in);
     return is_.is_open();
   }
 
@@ -569,8 +644,9 @@ class OffsetFileInputImpl: public InputImplBase {
       } else {
         is_.close();  // don't bother checking error status of is_.
         filename_ = tmp_filename;
-        is_.open(filename_.c_str(), binary ? std::ios_base::in|std::ios_base::binary
-                 : std::ios_base::in);
+        is_.open(map_os_path(filename_).c_str(),
+                 binary ? std::ios_base::in | std::ios_base::binary
+                        : std::ios_base::in);
         if (!is_.is_open()) return false;
         else return Seek(offset);
       }
@@ -578,8 +654,9 @@ class OffsetFileInputImpl: public InputImplBase {
       size_t offset;
       SplitFilename(rxfilename, &filename_, &offset);
       binary_ = binary;
-      is_.open(filename_.c_str(), binary ? std::ios_base::in|std::ios_base::binary
-               : std::ios_base::in);
+      is_.open(map_os_path(filename_).c_str(),
+                binary ? std::ios_base::in | std::ios_base::binary
+                      : std::ios_base::in);
       if (!is_.is_open()) return false;
       else return Seek(offset);
     }
