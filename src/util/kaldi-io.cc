@@ -153,8 +153,8 @@ InputType ClassifyRxfilename(const std::string &filename) {
     std::string qcmd(bash_exe != nullptr ? bash_exe : "bash.exe");
     qcmd += " -c \"";
     for (; *command; ++command) {
-      if (*command == '\"' || *command == '\\')
-        qcmd += '\\';
+      if (*command == '\"')
+        qcmd += '\"';
       qcmd += *command;
     }
     qcmd += '\"';
