@@ -7,10 +7,14 @@
     <Error Condition=" '$(BuildStage)' == 'Binary' and '$(KaldiBinaryTarget)' == '' "
            Text="For the Binary and Test build stages, KaldiBinaryTarget= specification is required. Are you running the top-level build project?"/>
     <Error Condition=" '$(Platform)' != 'Win32' and '$(Platform)' != 'x64' "
-           Text="You have set Platfrom to a value other than 'Win32' or 'x64'. This will not work."/>
+           Text="You have set Platform to a value other than 'Win32' or 'x64'. This will not work."/>
     <Warning Condition=" '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' == '' "
              Text="CUDA has been requested in kaldi.user.props but not found. Install CUDA 6.5 (not supporting other versions at the moment)." />
   </Target>
+
+  <Target Name="Test" DependsOnTargets="_BumpKaldiBuildDepthToTest;Build" Condition=" '$(BuildStage)' == '' " />
+
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" Condition=" '$(BuildStage)' == '' " />
 
   <Target Name="Build" DependsOnTargets="_PrepareBuildStages" Condition=" '$(BuildStage)' == '' ">
     <MSBuild Targets="Build" Projects="@(_LibraryTarget)"/>
@@ -18,15 +22,15 @@
     <MSBuild Targets="Build" Projects="@(_TestTarget)" BuildInParallel="true" Condition=" $(KaldiBuildDepth) >= 2 "/>
   </Target>
 
-  <Target Name="Rebuild" DependsOnTargets="_PrepareBuildStages" Condition=" '$(BuildStage)' == '' ">
-    <MSBuild Targets="Rebuild" Projects="@(_LibraryTarget)"/>
-    <MSBuild Targets="Rebuild" Projects="@(_BinaryTarget)" BuildInParallel="true" Condition=" $(KaldiBuildDepth) >= 1 "/>
-    <MSBuild Targets="Rebuild" Projects="@(_TestTarget)" BuildInParallel="true" Condition=" $(KaldiBuildDepth) >= 2 "/>
-  </Target>
-
   <Target Name="Clean" DependsOnTargets="_PrepareBuildStages" Condition=" '$(BuildStage)' == '' ">
     <MSBuild Targets="Clean" Projects="@(_LibraryTarget)" Condition=" '@(_LibraryTarget)' != '' "/>
     <MSBuild Targets="Clean" Projects="@(_BinaryTarget);@(_TestTarget)" BuildInParallel="true" StopOnFirstFailure="false"/>
+  </Target>
+
+  <Target Name="_BumpKaldiBuildDepthToTest">
+    <PropertyGroup>
+      <KaldiBuildDepth>3</KaldiBuildDepth>
+    </PropertyGroup>
   </Target>
 
   <Target Name="_PrepareBuildStages">
@@ -109,19 +113,19 @@
     <!-- Linker always creates .lib an. .exp files for executable binaries if
          any symbols are dllexported. Reduce clutter, in our case they are useless. -->
     <Delete TreatErrorsAsWarnings="true" Files="$(OutDir)$(TargetName).lib;$(OutDir)$(TargetName).exp"/>
-    <Message Importance="high" Text="Deleting $(OutDir)$(TargetName).lib;$(OutDir)$(TargetName).exp"/>
   </Target>
 
   <Target Name="_RunTest" AfterTargets="AfterBuild" Inputs="$(TargetPath)" Outputs="$(IntDir)$(TargetName).success" Condition=" '$(BuildStage)' == 'Binary' and  '$(RunTest)' == 'true' ">
     <Message Importance="high" Text="*** Running test: $(TargetPath)" />
     <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success"/>
-    <Exec Command="$(TargetPath) > ../../logs/intel/$(TargetName).log 2>&amp;1" WorkingDirectory="$(_KaldiSrcSubdir)" IgnoreStandardErrorWarningFormat="true" ContinueOnError="true"/>
+    <MakeDir Directories="$(_KaldiRootPath)/logs/$(PlatformToolset)" />
+    <Exec Command="$(TargetPath) > $(_KaldiRootPath)/logs/$(PlatformToolset)/$(TargetName).log 2>&amp;1" WorkingDirectory="$(_KaldiSrcSubdir)" IgnoreStandardErrorWarningFormat="true" ContinueOnError="true"/>
     <PropertyGroup>
       <_TestSucceeded>$(MSBuildLastTaskResult)</_TestSucceeded>
     </PropertyGroup>
     <Touch AlwaysCreate="true" Files="$(IntDir)$(TargetName).success" Condition=" '$(_TestSucceeded)' == 'true' "/>
     <Delete TreatErrorsAsWarnings="true" Files="$(IntDir)$(TargetName).success" Condition=" '$(_TestSucceeded)' != 'true' "/>
-    <Warning Text="Test $(TargetPath) has failed" Condition=" '$(_TestSucceeded)' != 'true' "/> 
+    <Warning Text="Test $(TargetPath) has failed" Condition=" '$(_TestSucceeded)' != 'true' "/>
   </Target>
 
   <Target Name="_CleanAfterTest" BeforeTargets="CoreClean" Condition=" '$(BuildStage)' == 'Binary' ">

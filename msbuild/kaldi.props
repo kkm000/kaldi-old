@@ -3,7 +3,7 @@
 
   <!-- Defaults, to be changed in kaldi.user.props -->
   <PropertyGroup>
-    <Platform>Win32</Platform>
+    <Platform>x64</Platform>
     <PlatformToolset>v120</PlatformToolset>
     <KaldiCUDA>true</KaldiCUDA>
     <KaldiOptimize>true</KaldiOptimize>
@@ -38,6 +38,13 @@
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Cpp0xSupport>true</Cpp0xSupport>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <!-- Note on disabled warnings:
+         C4722: destructor never returns. This better be handled in base\kaldi-error.cc.
+         C4146: unary minus operator applied to unsigned type.
+         C4018: '<' : signed/unsigned mismatch. Disabled in most gcc compiled libraries.
+      -->
+      <DisableSpecificWarnings>4018;4146;4722</DisableSpecificWarnings>
       <!-- These properties affect the Intel compiler only -->
       <!--<FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>-->
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
@@ -52,6 +59,7 @@
   <PropertyGroup>
     <UseDebugLibraries>false</UseDebugLibraries>
     <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
 
   <!-- User setting: KaldiOptimize = true -->

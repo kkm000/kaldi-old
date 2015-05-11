@@ -2,15 +2,17 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
 
-    <!-- Define build bitness. Valid values are Win32 and x64 -->
-    <Platform>Win32</Platform>
+    <!-- Define build bitness. Valid values are Win32 and x64. You do not want Win32 though, 
+         as running out of the 2G address space is common with kaldi tools. -->
+    <Platform>x64</Platform>
 
     <!-- Toolset. Tested with "v120" (Microsoft VS2013) and "Intel C++ Compiler XE 15.0" (w/o quotes, exact string)-->
     <!-- NB: Due to a bug in Intel build scripts, libraries will be rebuilt each time build is run.
-             See https://software.intel.com/en-us/forums/topic/537271 -->
-    <!--<PlatformToolset>Intel C++ Compiler XE 15.0</PlatformToolset>-->
+             See https://software.intel.com/en-us/forums/topic/537271
+             The latest word from Intel support is that the fix is going out in XE 15.0 Update 3. -->
+    <!-- <PlatformToolset>Intel C++ Compiler XE 15.0</PlatformToolset> -->
 
-    <!-- If using Intel C++ Compiler, use Intel MKL which is integrated into Intel build process.
+    <!-- If having installed Intel C++ Compiler, use Intel MKL which is integrated into Intel build process.
          If you are using MKL from a standalone installation (now discontinued), then instead add
          paths to include files and libraries, and define symbol HAVE_MKL in KaldiDefines.
          Valid values for this parameter are No (the default), Parallel and Sequential. -->
@@ -43,26 +45,27 @@
     <KaldiRootPath>../</KaldiRootPath>
 
     <!-- Additional preprocessor defines. -->
-    <KaldiDefines>HAVE_OPENFST_GE_10400</KaldiDefines>
+    <!-- Add HAVE_OPENFST_GE_10400 if using openfstwin 1.4.1 and above. -->
+    <KaldiDefines></KaldiDefines>
 
     <!-- Additional include directories. At the least, point to openfstwin installation. -->
     <KaldiIncludePaths>
-      C:\projects\kaldi\kaldi\extlibs\openfstwin-1.4.1\include;
+      C:\projects\kaldi\kaldi\extlibs\openfstwin-1.3.1\include;
       C:\projects\kaldi\kaldi\extlibs\pthreads-2.9.1\include;
     </KaldiIncludePaths>
 
     <!-- Additional library directories. Will be different for 32 and 64 builds. -->
     <KaldiLibPaths Condition =" '$(Platform)' == 'Win32' ">
-      C:\projects\kaldi\kaldi\extlibs\openfstwin-1.4.1\lib\x32;
+      C:\projects\kaldi\kaldi\extlibs\openfstwin-1.3.1\lib\win32;
       C:\projects\kaldi\kaldi\extlibs\pthreads-2.9.1\lib\x86;
     </KaldiLibPaths>
     <KaldiLibPaths Condition =" '$(Platform)' == 'x64'   ">
-      C:\projects\kaldi\kaldi\extlibs\openfstwin-1.4.1\lib\x64;
+      C:\projects\kaldi\kaldi\extlibs\openfstwin-1.3.1\lib\x64;
       C:\projects\kaldi\kaldi\extlibs\pthreads-2.9.1\lib\x64;
     </KaldiLibPaths>
 
     <!-- Additional link libraries. -->
-    <KaldiLibFiles>openfst.lib;pthreadVC2.lib</KaldiLibFiles>
+    <KaldiLibFiles>pthreadVC2.lib</KaldiLibFiles>
 
   </PropertyGroup>
 </Project>
