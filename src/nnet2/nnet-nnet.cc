@@ -326,6 +326,25 @@ void Nnet::ScaleLearningRates(BaseFloat factor) {
             << ostr.str();
 }
 
+void Nnet::ScaleLearningRates(std::map<std::string, BaseFloat> scale_factors) {
+  std::ostringstream ostr;
+  for (int32 c = 0; c < NumComponents(); c++) {
+    UpdatableComponent *uc = dynamic_cast<UpdatableComponent*>(components_[c]);
+    if (uc != NULL) {  // Updatable component...
+      // check if scaling factor was specified for a component of this type
+      std::map<std::string, BaseFloat>::const_iterator lr_iterator =
+        scale_factors.find(uc->Type());
+      if (lr_iterator != scale_factors.end())  {
+        uc->SetLearningRate(uc->LearningRate() * lr_iterator->second);
+        ostr << uc->LearningRate() << " ";
+      }
+    }
+  }
+  KALDI_LOG << "Scaled learning rates by component-type specific factor, "
+            << "new learning rates are "
+            << ostr.str();
+}
+
 void Nnet::SetLearningRates(BaseFloat learning_rate) {
   for (int32 c = 0; c < NumComponents(); c++) {
     UpdatableComponent *uc = dynamic_cast<UpdatableComponent*>(components_[c]);
@@ -728,8 +747,8 @@ Nnet *GenRandomNnet(int32 input_dim,
                     int32 output_dim) {
   std::vector<Component*> components;
   int32 cur_dim = input_dim;
-  // have up to 4 layers before the final one.
-  for (size_t i = 0; i < 4; i++) {
+  // have up to 10 layers before the final one.
+  for (size_t i = 0; i < 10; i++) {
     if (rand() % 2 == 0) {
       // add an affine component.
       int32 next_dim = 50 + rand() % 100;

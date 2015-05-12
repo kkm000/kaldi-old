@@ -25,7 +25,7 @@ echo ""
 for a in `find $dir/decode_tgpr_5k_dt05_real_$enhan/ | grep "\/wer_" | awk -F'[/]' '{print $NF}' | sort`; do
     echo -n "$a "
     cat $dir/decode_tgpr_5k_dt05_{real,simu}_$enhan/$a | grep WER | awk '{err+=$4} {wrd+=$6} END{printf("%.2f\n",err/wrd*100)}'
-done | sort -k 2 | head -n 1 > $dir/log/best_wer_$enhan
+done | sort -n -k 2 | head -n 1 > $dir/log/best_wer_$enhan
 
 lmw=`cut -f 1 -d" " $dir/log/best_wer_$enhan | cut -f 2 -d"_"`
 echo "-------------------"
@@ -52,6 +52,7 @@ for task in simu real; do
     echo ""
     echo "-------------------"
 done
+echo ""
 # for spreadsheet cut&paste
 for task in simu real; do
     rdir=$dir/decode_tgpr_5k_dt05_${task}_$enhan
@@ -63,3 +64,13 @@ for task in simu real; do
 done
 cut -f 2 -d" " $dir/log/best_wer_$enhan
 echo $lmw
+
+echo "-------------------"
+echo "1-best transcription"
+echo "-------------------"
+for task in simu real; do
+    rdir=$dir/decode_tgpr_5k_dt05_${task}_$enhan
+    cat $rdir/scoring/$lmw.tra \
+	| utils/int2sym.pl -f 2- $rdir/../graph_tgpr_5k/words.txt \
+	| sed s:\<UNK\>::g
+done

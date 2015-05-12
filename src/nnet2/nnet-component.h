@@ -74,13 +74,13 @@ class ChunkInfo {
   ChunkInfo()  // default constructor we assume this object will not be used
       : feat_dim_(0), num_chunks_(0),
         first_offset_(0), last_offset_(0), 
-        offsets_() { };
+        offsets_() { }
  
   ChunkInfo(int32 feat_dim, int32 num_chunks,
             int32 first_offset, int32 last_offset ) 
       : feat_dim_(feat_dim), num_chunks_(num_chunks),
         first_offset_(first_offset), last_offset_(last_offset),
-        offsets_() { Check(); };
+        offsets_() { Check(); }
   
   ChunkInfo(int32 feat_dim, int32 num_chunks,
             const std::vector<int32> offsets)
@@ -88,7 +88,7 @@ class ChunkInfo {
         first_offset_(offsets.front()), last_offset_(offsets.back()),
         offsets_(offsets) { if (last_offset_ - first_offset_ + 1 == offsets_.size())
                               offsets_.clear();
-          Check(); };
+          Check(); }
 
   // index : actual row index in the current chunk
   // offset : the time offset of feature frame at current row in the chunk
@@ -179,11 +179,12 @@ class Component {
   virtual int32 OutputDim() const = 0;
 
   /// Return a vector describing the temporal context this component requires
-  /// for each frame of output, as a sorted list. 
-  /// The default implementation returns a vector ( 0 ), but a splicing layer
-  /// might return e.g. (-2, -1, 0, 1, 2), but it doesn't have to be contiguous.
-  /// Note : The context needed by the entire network is a function of the
-  /// contexts needed by all the components
+  /// for each frame of output, as a sorted list.  The default implementation
+  /// returns a vector ( 0 ), but a splicing layer might return e.g. (-2, -1, 0,
+  /// 1, 2), but it doesn't have to be contiguous.  Note : The context needed by
+  /// the entire network is a function of the contexts needed by all the
+  /// components.  It is required that Context().front() <= 0 and
+  /// Context().back() >= 0.
   virtual std::vector<int32> Context() const { return std::vector<int32>(1, 0); }
 
   /// Perform forward pass propagation Input->Output.  Each row is
@@ -895,6 +896,9 @@ class AffineComponentPreconditioned: public AffineComponent {
 };
 
 
+/// Keywords: natural gradient descent, NG-SGD, naturalgradient.  For
+/// the top-level of the natural gradient code look here, and also in
+/// nnet-precondition-online.h.
 /// AffineComponentPreconditionedOnline is, like AffineComponentPreconditioned,
 /// a version of AffineComponent that has a non-(multiple of unit) learning-rate
 /// matrix.  See nnet-precondition-online.h for a description of the technique.
@@ -1408,7 +1412,7 @@ class FixedAffineComponent: public Component {
 
 /// FixedScaleComponent applies a fixed per-element scale; it's similar
 /// to the Rescale component in the nnet1 setup (and only needed for nnet1
-/// model conversion.
+/// model conversion).
 class FixedScaleComponent: public Component {
  public:
   FixedScaleComponent() { } 

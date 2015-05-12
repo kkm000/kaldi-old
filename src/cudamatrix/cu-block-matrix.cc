@@ -23,8 +23,7 @@
 #include <cublas.h>
 #endif
 
-#include <algorithm>  // For min() and max().
-
+#include <algorithm>
 #include "base/timer.h"
 #include "cudamatrix/cu-block-matrix.h"
 #include "cudamatrix/cu-matrix.h"
