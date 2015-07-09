@@ -161,8 +161,13 @@ void UnitTestIoNew(bool binary) {
 void UnitTestIoPipe(bool binary) {
   // This is as UnitTestIoNew except with different filenames.
   {
+#if defined(_MSC_VER) && !defined(KALDI_CYGWIN_COMPAT)
+    const char *filename_out = "|copy /b con tmpf.gz",
+        *filename_in = "copy /b tmpf.gz con|";
+#else
     const char *filename_out = "|gzip -c > tmpf.gz",
         *filename_in = "gunzip -c tmpf.gz |";
+#endif
 
     Output ko(filename_out, binary);
     std::ostream &outfile = ko.Stream();

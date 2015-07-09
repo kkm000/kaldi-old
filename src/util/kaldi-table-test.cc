@@ -57,6 +57,7 @@ void UnitTestReadScriptFile() {
     // suppress the warning since I already checked it's OK.
     KALDI_ASSERT(!ReadScriptFile(ss, false, &script));
   }
+#if !defined(_MSC_VER) || defined(KALDI_CYGWIN_COMPAT)
   {
     Output ko("| gzip -c > tmpf.gz", false);  // text mode.
     ko.Stream() << "a b\n";
@@ -83,6 +84,7 @@ void UnitTestReadScriptFile() {
     KALDI_ASSERT(!ans);
   }
   unlink("tmpf.gz");
+#endif
 }
 
 
