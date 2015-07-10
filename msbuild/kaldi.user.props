@@ -46,7 +46,7 @@
 
     <!-- Additional preprocessor defines. -->
     <!-- Add HAVE_OPENFST_GE_10400 if using openfstwin 1.4.1 and above. -->
-    <KaldiDefines></KaldiDefines>
+    <KaldiDefines>KALDI_CYGWIN_COMPAT</KaldiDefines>
 
     <!-- Additional include directories. At the least, point to openfstwin installation. -->
     <KaldiIncludePaths>
