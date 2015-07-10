@@ -26,9 +26,8 @@
 #include "util/kaldi-pipebuf.h"
 
 #ifdef KALDI_CYGWIN_COMPAT
-#include "util/kaldi-cygwin-io-inl.h>
+#include "util/kaldi-cygwin-io-inl.h"
 #define MapOsPath(x) MapCygwinPath(x)
-#endif
 #else  // KALDI_CYGWIN_COMPAT
 #define MapOsPath(x) x
 #endif  // KALDI_CYGWIN_COMPAT
@@ -36,9 +35,9 @@
 #ifdef _MSC_VER
 static FILE *popen(const char* command, const char* mode) {
 #ifdef KALDI_CYGWIN_COMPAT
-  return _popen(command, mode);
+  return kaldi::CygwinCompatPopen(command, mode);
 #else  // KALDI_CYGWIN_COMPAT
-  return CygwinCompatPopen(command, mode);
+  return _popen(command, mode);
 #endif  // KALDI_CYGWIN_COMPAT
 }
 #endif  // _MSC_VER
