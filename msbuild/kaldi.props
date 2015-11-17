@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Defaults, to be changed in kaldi.user.props -->
+  <PropertyGroup>
+    <Platform>x64</Platform>
+    <PlatformToolset>v120</PlatformToolset>
+    <KaldiCUDA>true</KaldiCUDA>
+    <KaldiOptimize>true</KaldiOptimize>
+    <KaldiDebugInfo>false</KaldiDebugInfo>
+    <KaldiRootPath>../</KaldiRootPath>
+    <UseIntelMKL>No</UseIntelMKL>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <KaldiUserProps Condition=" '$(KaldiUserProps)' == '' ">kaldi.user.props</KaldiUserProps>
+  </PropertyGroup>
+
+  <Import Project="$(KaldiUserProps)" />
+
+  <!-- Do not change these, affect build process. -->
+  <PropertyGroup>
+    <Configuration>Release</Configuration>
+    <ConfigurationPlatformExists>true</ConfigurationPlatformExists>
+    <IgnoreWarnIntDirSharingDetected>true</IgnoreWarnIntDirSharingDetected>
+  </PropertyGroup>
+
+  <!-- Common build defaults -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>$(KaldiCpuInstructionSet)</EnableEnhancedInstructionSet>
+      <ErrorReporting>None</ErrorReporting>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Cpp0xSupport>true</Cpp0xSupport>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <!-- Note on disabled warnings:
+         C4722: destructor never returns. This better be handled in base\kaldi-error.cc.
+         C4146: unary minus operator applied to unsigned type.
+         C4018: '<' : signed/unsigned mismatch. Disabled in most gcc compiled libraries.
+      -->
+      <DisableSpecificWarnings>4018;4146;4722</DisableSpecificWarnings>
+      <!-- These properties affect the Intel compiler only -->
+      <!--<FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>-->
+      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <!--<LinkIncremental>false</LinkIncremental>-->
+      <AdditionalDependencies>$(KaldiLibFiles);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(KaldiLibPaths);%(AdditionalLibraryDirectories);</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <PropertyGroup>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+
+  <!-- User setting: KaldiOptimize = true -->
+  <ItemDefinitionGroup Condition=" '$(KaldiOptimize)' == 'true' ">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <!-- If WPO is enabled, the compile time is godawful (hours!) -->
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <InterproceduralOptimization>MultiFile</InterproceduralOptimization>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <PropertyGroup Condition=" '$(KaldiOptimize)' == 'true' ">
+    <!-- If WPO is enabled, the compile time is godawful (hours!) -->
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <!-- User setting: KaldiDebugInfo = true -->
+  <ItemDefinitionGroup Condition=" '$(KaldiDebugInfo)' == 'true' ">
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- User setting: UseIntelMKL -->
+  <ItemDefinitionGroup Condition=" '$(UseIntelMKL)' != '' and '$(UseIntelMKL)' != 'No' ">
+    <ClCompile>
+      <PreprocessorDefinitions>HAVE_MKL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- Linking with MKL sometimes produces a deluge of warnings 4006 and 4221. Ignore them, they are harmless. -->
+    <Lib>
+      <AdditionalOptions>/IGNORE:4006,4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+    <Link>
+      <AdditionalOptions>/IGNORE:4006,4221 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup>
+    <!-- Build depth.
+      On a build/rebuild taget, this determines the extent of the build:
+      0 - Build library only. This is the default, in case the project is invoked as a library dependency.
+      1 - As above, and also binary files.
+      2 - As above, and also build tests.
+      3 - As above, and also run tests.
+    -->
+    <KaldiBuildDepth Condition=" '$(KaldiBuildDepth)' == '' ">0</KaldiBuildDepth>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Compute kaldi root path that works whether KaldiRootPath is absolute or relative -->
+    <_KaldiRootPath>$([System.IO.Path]::Combine('..', '$(KaldiRootPath)'))</_KaldiRootPath>
+    <!-- Compute path to a subdirectory under (kaldi_root)/src/ with sources for the current project. -->
+    <_KaldiSrcSubdir>$(_KaldiRootPath)src/$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))/</_KaldiSrcSubdir>
+    <!-- Place generated files besides the source, as the original linux build does -->
+    <OutDir>$(_KaldiSrcSubdir)</OutDir>
+    <IntDir>obj/</IntDir>
+  </PropertyGroup>
+
+  <PropertyGroup  Condition="'$(BuildStage)' == 'Library'">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildStage)' == 'Binary'" >
+    <TargetName>$(KaldiBinaryTarget)</TargetName>
+    <ProjectName>$(KaldiBinaryTarget)</ProjectName>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <!-- Add Kaldi root path and explicitly provided paths as additional include sources. -->
+      <AdditionalIncludeDirectories>$(_KaldiRootPath)src;$(KaldiIncludePaths);%(ClCompile.AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>$(KaldiDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- Set unique intermediate pdb name for each build to avoid conflicts and speed up compilation. -->
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup>
+    <_UsingIntelToolset>$(PlatformToolset.StartsWith('Intel C++ Compiler'))</_UsingIntelToolset>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <!-- CUDA properties may be set up only this late. -->
+  <PropertyGroup>
+    <CUDAPropsPath Condition="'$(CUDAPropsPath)'==''">$(VCTargetsPath)/BuildCustomizations</CUDAPropsPath>
+    <CUDAFound Condition="exists('$(CUDAPropsPath)/CUDA 6.5.props')" >65</CUDAFound>
+    <!--<CUDAFound Condition="exists('$(CUDAPropsPath)\CUDA 7.0.props')" >70</CUDAFound>-->
+  </PropertyGroup>
+
+  <ImportGroup Condition=" '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' ">
+    <Import Project="$(CUDAPropsPath)/CUDA 6.5.props" Condition=" '$(CUDAFound)' == '65' "  />
+  </ImportGroup>
+
+  <ItemDefinitionGroup  Condition=" '$(KaldiCUDA)' == 'true' and '$(CUDAFound)' != '' ">
+    <CudaCompile>
+      <CodeGeneration>compute_20,sm_20;compute_30,sm_30;compute_35,sm_35;compute_37,sm_37;compute_50,sm_50;</CodeGeneration>
+    </CudaCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>HAVE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>cublas.lib;cusparse.lib;cudart_static.lib;cuda.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup Condition=" '$(_UsingIntelToolset)' == 'true' ">
+    <CudaClVersion>2013</CudaClVersion>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup  Condition=" '$(_UsingIntelToolset)' == 'true' ">
+    <CudaCompile>
+      <!--<UseHostDefines>false</UseHostDefines>-->
+      <VCBinDir>C:\Program Files (x86)\Intel\Composer XE 2015\bin\intel64\icl.exe</VCBinDir>
+      <BaseCommandLineTemplate>-ccbin "%(VCBinDir)" [GenerateRelocatableDeviceCode] [Include] [RequiredIncludes] [CInterleavedPTX] [GPUDebugInfo] [GenerateLineInfo] [Keep] [KeepDir] [MaxRegCount] [PtxAsOptionV] [TargetMachinePlatform] [NvccCompilation] [CudaRuntime] [AdditionalOptions]</BaseCommandLineTemplate>
+      <RuntimeApiCommandLineTemplate>%(BaseCommandLineTemplate) [HostDebugInfo] [Emulation] [FastMath] [Defines] %(HostCommandLineTemplate) [CompileOut] "%(FullPath)"</RuntimeApiCommandLineTemplate>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+</Project>
