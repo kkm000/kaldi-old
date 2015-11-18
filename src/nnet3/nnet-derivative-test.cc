@@ -418,6 +418,10 @@ void UnitTestNnetInputDerivatives() {
     KALDI_ERR << "Failed too many times.";
 }
 
+static void UnitTestNnetDerivatives() {
+  UnitTestNnetModelDerivatives();
+  UnitTestNnetInputDerivatives();
+}
 
 } // namespace nnet3
 } // namespace kaldi
@@ -427,20 +431,14 @@ int main() {
   using namespace kaldi::nnet3;
   //SetVerboseLevel(2);
 
-
-  for (int32 loop = 0; loop < 2; loop++) {
 #if HAVE_CUDA == 1
-    if (loop == 0)
-      CuDevice::Instantiate().SelectGpuId("no");
-    else
-      CuDevice::Instantiate().SelectGpuId("yes");
+  CuDevice::Instantiate().SelectGpuId("no");
+  UnitTestNnetDerivatives();
+  CuDevice::Instantiate().SelectGpuId("yes");
 #endif
-    UnitTestNnetModelDerivatives();
-    UnitTestNnetInputDerivatives();
-  }
+  UnitTestNnetDerivatives();
 
   KALDI_LOG << "Nnet tests succeeded.";
-
   return 0;
 }
 

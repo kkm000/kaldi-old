@@ -116,16 +116,12 @@ int main() {
   using namespace kaldi::nnet3;
   //SetVerboseLevel(2);
 
-
-  for (int32 loop = 0; loop < 2; loop++) {
 #if HAVE_CUDA == 1
-    if (loop == 0)
-      CuDevice::Instantiate().SelectGpuId("no");
-    else
-      CuDevice::Instantiate().SelectGpuId("yes");
+  CuDevice::Instantiate().SelectGpuId("no");
+  UnitTestNnetCompute();
+  CuDevice::Instantiate().SelectGpuId("yes");
 #endif
-    UnitTestNnetCompute();
-  }
+  UnitTestNnetCompute();
 
   KALDI_LOG << "Nnet tests succeeded.";
 
